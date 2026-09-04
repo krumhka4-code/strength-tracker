@@ -840,7 +840,7 @@ function buildSelectors() {
   });
   PROGRAM.days.forEach(d => {
     const o = document.createElement("option");
-    o.value = d.n; o.textContent = "Day " + d.n + " — " + d.name;
+    o.value = d.n; o.textContent = "D" + d.n + " — " + d.name;
     sd.appendChild(o);
   });
   sw.value = S.week; sd.value = S.day;
