@@ -1,6 +1,6 @@
 /* Strength Tracker service worker.
    Bump CACHE when any shell file changes, or the phone keeps serving the old one. */
-const CACHE = "strength-tracker-v1.0.0";
+const CACHE = "strength-tracker-v1.1.0";
 const SHELL = [
   "./",
   "./index.html",

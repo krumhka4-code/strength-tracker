@@ -231,7 +231,9 @@ td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
   <!-- ============ LIFT ============ -->
   <section id="v-lift" class="view on">
     <div class="card tight">
-      <h3 style="margin:0 0 .35rem">Week / Day</h3>
+      <h3 style="margin:0 0 .35rem">Program</h3>
+      <select id="selProgram" aria-label="Program"></select>
+      <h3 style="margin:.7rem 0 .35rem">Week / Day</h3>
       <div class="grid2">
         <select id="selWeek" aria-label="Week"></select>
         <select id="selDay" aria-label="Day"></select>
@@ -382,7 +384,7 @@ td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
 
 <script>
 "use strict";
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 const STORE_KEY = "strength-tracker-v1";
 
 /* ============================================================
@@ -480,6 +482,82 @@ const PROGRAM = {
   ]
 };
 
+/* ============================================================
+   RE-ENTRY BLOCK - built 2026-09-07 for the restart on 2026-09-08.
+
+   Last logged session was W6D1 on 2026-08-04, so this follows about five weeks off,
+   with a hamstring that was flagged mild that same day and never re-tested.
+
+   Three calls, and the reasoning, because they are judgements and not data:
+
+   1. NOT PERCENTAGE-LOADED. The squat 1RM of 215 was Karl's own call against Epley's
+      198-205 before the layoff, and it is now five weeks stale. Percentages off a max
+      that was already contested is how people get hurt coming back. This block caps
+      effort by REPS IN RESERVE instead and recalibrates from what actually gets logged.
+   2. THREE DAYS, FULL BODY. More frequency per movement pattern than a four-day split,
+      more recovery, and it leaves room for the mobility work that is half the point.
+   3. CORE GOES FIRST, before the lifts. His own logs say the back half of a session is
+      what gets trimmed when time is short, and the rear delts and accessories are the
+      most-skipped items in them. Anything that must happen goes at the top.
+
+   Starting loads are suggestions. Where one came from a logged set, the set is named.
+   ============================================================ */
+const REENTRY = {
+  key: "reentry",
+  name: "Re-entry Block",
+  source: "Built 2026-09-07 for the restart after ~5 weeks off",
+  weeks: 4,
+  loading: "rir",
+  rirByWeek: { 1: 4, 2: 3, 3: 3, 4: 2 },
+  weekNote: {
+    1: "Deliberately easy. You are going to want to add weight. Do not.",
+    2: "Same movements, slightly more load. Still stopping well short of failure.",
+    3: "First week that should actually feel like training.",
+    4: "Last week. Then recalibrate off your logged sets and go back to Nick's Program."
+  },
+  lead: "Open with the warm-up in the Warm tab. If you have got into Mobility Basics by then, that is the 15 minutes instead.",
+  days: [
+    {
+      n: 1, name: "A - Squat", confirmed: true,
+      ex: [
+        { k: "r-deadbug",  slot: "1", nm: "Dead Bug",            block: "core", scheme: "3 x 8 each side", cue: "Back flat the whole time. If it arches, shorten the range." },
+        { k: "r-hollow",   slot: "2", nm: "Hollow Body Hold",    block: "core", scheme: "3 x 25s", cue: "Ribs down. If the abs cone, raise the arms and legs higher and work back down." },
+        { k: "r-boxsquat", slot: "A", nm: "Box Squat",           block: "lift", scheme: "3 x 5",  start: 115, basis: "about 65% of the 175x2 @ 3 RIR you logged 2026-08-04", cue: "Narrow stance, knees out. Your safest squat variation and the one that held up." },
+        { k: "r-dbbench",  slot: "B", nm: "DB Bench Press",      block: "lift", scheme: "3 x 8",  start: 50,  basis: "per dumbbell. Conservative against the 85s you were carrying, which were themselves shaky", cue: "" },
+        { k: "r-csrow",    slot: "C", nm: "Chest Supported Row", block: "lift", scheme: "3 x 10", start: 60,  basis: "estimate, no logged number for this one", cue: "Your strongest movement on this day." },
+        { k: "r-lunge",    slot: "D", nm: "Walking Lunge",       block: "lift", scheme: "3 x 10 each side", start: 20, basis: "the 20 lb you used first time out on 2026-08-04", cue: "" }
+      ]
+    },
+    {
+      n: 2, name: "B - Hinge", confirmed: true,
+      warn: "This is the hamstring re-test. It was flagged mild on 2026-08-04 and has never been checked since.",
+      ex: [
+        { k: "r-sideplank", slot: "1", nm: "Side Plank",         block: "core", scheme: "3 x 25s each side" },
+        { k: "r-deadbug2",  slot: "2", nm: "Dead Bug",           block: "core", scheme: "3 x 8 each side" },
+        { k: "r-rdl",       slot: "A", nm: "Romanian Deadlift",  block: "lift", scheme: "3 x 8", start: 95, basis: "deliberately far below the 225x3 @ 2 RIR you were pulling. This is a test, not a working set", cue: "STOP the set at the first grabby feeling in the hamstring. Do not push through it. Getting through this week clean is what earns the deadlift back." },
+        { k: "r-pullup",    slot: "B", nm: "Pull-Ups",           block: "lift", scheme: "3 x 5", cue: "Early, and nowhere near failure. You hold 10/10/9 fresh, so fives are easy on purpose." },
+        { k: "r-dbohp",     slot: "C", nm: "DB Shoulder Press",  block: "lift", scheme: "3 x 8", start: 30, basis: "per dumbbell, estimate", cue: "Ribs down. Do not arch the back to finish the rep." },
+        { k: "r-split",     slot: "D", nm: "Split Squat",        block: "lift", scheme: "3 x 8 each side", start: 0, basis: "bodyweight to start", cue: "" }
+      ]
+    },
+    {
+      n: 3, name: "C - Mixed", confirmed: true,
+      ex: [
+        { k: "r-hollow2",  slot: "1", nm: "Hollow Body Hold",   block: "core", scheme: "3 x 25s" },
+        { k: "r-hkr",      slot: "2", nm: "Hanging Knee Raise", block: "core", scheme: "3 x 8", cue: "Curl the hips at the top, not just a knee lift. It sits here and not on day B because it must not follow hinging." },
+        { k: "r-goblet",   slot: "A", nm: "Goblet Squat",       block: "lift", scheme: "3 x 8",  start: 50, basis: "estimate", cue: "Upright torso. A different squat pattern from day A on purpose." },
+        { k: "r-dbrow",    slot: "B", nm: "Single-Arm DB Row",  block: "lift", scheme: "3 x 10 each side", start: 45, basis: "estimate", cue: "" },
+        { k: "r-incline",  slot: "C", nm: "Incline DB Press",   block: "lift", scheme: "3 x 8",  start: 40, basis: "per dumbbell, estimate", cue: "" },
+        { k: "r-hipthrust",slot: "D", nm: "Hip Thrust",         block: "lift", scheme: "3 x 10", start: 95, basis: "estimate", cue: "The direct glute work the anterior pelvic tilt actually needs. Ribs down, finish with the glutes and not the low back." }
+      ]
+    }
+  ]
+};
+
+const PROGRAMS = { nicks: PROGRAM, reentry: REENTRY };
+PROGRAM.key = "nicks";
+function activeProgram() { return PROGRAMS[S && S.programKey] || REENTRY; }
+
 /* Routines — from the vault record. star = keep when short on time. */
 const WARMUP = {
   title: "Pre-lift warm-up",
@@ -567,8 +645,9 @@ const SUPPS = [
    ============================================================ */
 function defaultState() {
   return {
-    v: 1,
-    week: 6,
+    v: 2,
+    programKey: "reentry",   // the restart block is what he is on from 2026-09-08
+    week: 1,
     day: 1,
     oneRM: { squat: 215, deadlift: 265, dbpress: 85 },
     lightScheme: {},          // week -> "4x5" etc. Unconfirmed until Karl sets it.
@@ -576,7 +655,7 @@ function defaultState() {
     sessions: [],
     bw: [],
     shop: {},
-    customEx: {}              // day number -> [ {k,nm,scheme} ]
+    customEx: {}              // "<programKey>:<day>" -> [ {k,nm,scheme} ]
   };
 }
 let S = Store.read() || defaultState();
@@ -597,8 +676,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt
 const round5 = (n) => Math.round(n / 5) * 5;
 const epley = (w, r) => (r <= 1 ? w : w * (1 + r / 30));
 const wave = (w) => WAVE.find(x => x.w === w) || WAVE[0];
-const dayDef = (n) => PROGRAM.days.find(d => d.n === n) || PROGRAM.days[0];
-const dkey = () => S.week + "-" + S.day;
+const dayDef = (n) => activeProgram().days.find(d => d.n === n) || activeProgram().days[0];
+const dkey = () => S.programKey + "-" + S.week + "-" + S.day;
 const fmtDate = (iso) => { const d = new Date(iso); return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }); };
 
 let toastT = null;
@@ -644,11 +723,14 @@ function setsEdit(exKey) {
 
 /* the full exercise list for a day, program + anything Karl added */
 function exercisesFor(n) {
-  return dayDef(n).ex.concat(S.customEx[n] || []);
+  return dayDef(n).ex.concat(S.customEx[S.programKey + ":" + n] || []);
 }
+function isRir() { return activeProgram().loading === "rir"; }
+function rirCap()  { return activeProgram().rirByWeek ? activeProgram().rirByWeek[S.week] : null; }
 
 /* target load for a percentage-driven lift */
 function targetFor(ex) {
+  if (isRir()) return null;
   if (!ex.base || !ex.pct) return null;
   const rm = Number(S.oneRM[ex.base]) || 0;
   const w = wave(S.week);
@@ -702,11 +784,25 @@ function showTab(k) {
 function renderHeader() {
   const w = wave(S.week), d = dayDef(S.day);
   $("hdrTitle").textContent = d.name;
-  $("hdrSub").textContent = PROGRAM.name;
-  $("hdrBadge").textContent = "W" + S.week + " · D" + S.day + (w.deload ? " · deload" : w.peak ? " · peak" : "");
+  $("hdrSub").textContent = activeProgram().name;
+  if (isRir()) {
+    $("hdrBadge").textContent = "W" + S.week + " · D" + S.day + " · RIR " + rirCap();
+  } else {
+    $("hdrBadge").textContent = "W" + S.week + " · D" + S.day + (w.deload ? " · deload" : w.peak ? " · peak" : "");
+  }
 }
 
 function renderWaveInfo() {
+  if (isRir()) {
+    const p = activeProgram(), cap = rirCap();
+    $("waveInfo").innerHTML =
+      '<span class="pill warnp">STOP AT ' + cap + ' REPS IN RESERVE</span><br>' +
+      "Every work set ends with <b>" + cap + " clean reps still in the tank</b>. No maxes, no percentages, " +
+      "nothing to failure. Loads below are starting suggestions, not prescriptions: if a set finishes with " +
+      "more than " + cap + " left, add weight next time; if it finishes with fewer, take weight off." +
+      (p.weekNote && p.weekNote[S.week] ? '<br><b style="color:var(--warn)">' + esc(p.weekNote[S.week]) + "</b>" : "");
+    return;
+  }
   const w = wave(S.week);
   let tag = "";
   if (w.deload) tag = '<span class="pill deload">DELOAD</span> ';
@@ -722,16 +818,21 @@ function renderWaveInfo() {
 function renderDayWarn() {
   const d = dayDef(S.day), box = $("dayWarn");
   box.innerHTML = "";
-  if (!d.confirmed) {
+  if (!d.confirmed && !isRir()) {
     box.appendChild(el("div", "note warn",
       "<b>" + esc(d.name) + " is only partly written down.</b> The vault has the lifts below confirmed from your logs; " +
       "the rest of this day was never recorded anywhere. Nothing has been invented to fill the gap — " +
       "add the missing movements from the 2019 spreadsheet and they will stick."));
   }
-  if (S.day === 3) {
+  if (d.warn) {
+    box.appendChild(el("div", "note bad", "<b>Hamstring.</b> " + esc(d.warn)));
+  } else if (!isRir() && S.day === 3) {
     box.appendChild(el("div", "note bad",
       "<b>Hamstring.</b> Flagged mild 2026-08-04 and never signed off. Re-test with light hinging before " +
       "you go back to a working deadlift — do not jump straight to the prescribed load."));
+  }
+  if (activeProgram().lead) {
+    box.appendChild(el("div", "note", "<b>Before you lift.</b> " + esc(activeProgram().lead)));
   }
 }
 
@@ -759,7 +860,7 @@ function setRows(ex) {
     ["reps", "load", "rir"].forEach(f => {
       const inp = document.createElement("input");
       inp.type = "number"; inp.inputMode = "decimal"; inp.value = st[f];
-      inp.placeholder = f === "load" ? "lb" : "";
+      inp.placeholder = f === "load" ? (ex.start ? String(ex.start) : "lb") : "";
       inp.oninput = () => { setsEdit(ex.k)[i][f] = inp.value; save(); };
       r.appendChild(inp);
     });
@@ -797,7 +898,11 @@ function renderLift() {
     const t = targetFor(ex);
     let sub = "";
     if (t) sub = '<span class="pill ' + ex.pct + '">' + (ex.pct === "heavy" ? "HEAVY" : "LIGHT") + "</span> " + t.pct + "% · " + t.load + " lb";
-    else if (ex.scheme) sub = '<span class="pill reps">' + esc(ex.scheme) + "</span>";
+    else if (ex.scheme) {
+      sub = '<span class="pill ' + (ex.block === "core" ? "reps" : "light") + '">' + esc(ex.scheme) + "</span>";
+      if (ex.start) sub += " " + ex.start + " lb";
+      else if (ex.start === 0) sub += " bodyweight";
+    }
     if (ex.was) sub += ' <span class="tiny" style="color:var(--faint)">was ' + esc(ex.was) + "</span>";
     head.appendChild(el("div", "nm", esc(ex.nm) + '<span class="sub">' + sub + "</span>"));
     head.appendChild(el("div", "slot", esc(ex.slot || "")));
@@ -819,41 +924,79 @@ function renderLift() {
       }
       if (ex.pct === "light" && !S.lightScheme[S.week]) body.appendChild(schemeChips());
     }
-    if (ex.cue) body.appendChild(el("div", "note", esc(ex.cue)));
+    if (isRir() && ex.block === "lift") {
+      body.appendChild(el("div", "target",
+        '<span class="big">' + (ex.start ? ex.start : "BW") + '</span><span class="unit">' +
+        (ex.start ? "lb" : "") + ' &nbsp;&middot;&nbsp; ' + esc(ex.scheme || "") +
+        ' &nbsp;&middot;&nbsp; stop at RIR ' + rirCap() + "</span>"));
+      if (ex.basis) body.appendChild(el("div", "derive", "Starting point: " + esc(ex.basis) + "."));
+    }
+    if (ex.cue) body.appendChild(el("div", "note" + (/STOP|Do not push/.test(ex.cue) ? " bad" : ""), esc(ex.cue)));
     body.appendChild(setRows(ex));
     card.appendChild(body);
     list.appendChild(card);
   });
 
   $("sessNotes").value = d.notes || "";
-  const saved = S.sessions.filter(s => s.week === S.week && s.day === S.day).length;
+  const saved = S.sessions.filter(s => (s.program || "nicks") === S.programKey && s.week === S.week && s.day === S.day).length;
   $("saveHint").textContent = saved ? saved + " session" + (saved > 1 ? "s" : "") + " already saved for W" + S.week + "D" + S.day : "";
 }
 
 function buildSelectors() {
-  const sw = $("selWeek"), sd = $("selDay");
-  WAVE.forEach(w => {
+  const sp = $("selProgram");
+  sp.innerHTML = "";
+  Object.keys(PROGRAMS).forEach(k => {
     const o = document.createElement("option");
-    o.value = w.w;
-    o.textContent = "Week " + w.w + (w.deload ? " — deload" : w.peak ? " — peak" : "");
-    sw.appendChild(o);
+    o.value = k; o.textContent = PROGRAMS[k].name;
+    sp.appendChild(o);
   });
-  PROGRAM.days.forEach(d => {
+  sp.value = S.programKey;
+  sp.onchange = () => {
+    S.programKey = sp.value;
+    S.week = 1; S.day = 1;          // a different program's week 6 means nothing here
+    openEx = null; save();
+    fillWeekDay(); renderLift();
+    toast("Switched to " + activeProgram().name);
+  };
+  fillWeekDay();
+  $("selWeek").onchange = () => { S.week = +$("selWeek").value; openEx = null; save(); renderLift(); };
+  $("selDay").onchange  = () => { S.day  = +$("selDay").value;  openEx = null; save(); renderLift(); };
+}
+
+/* Week and day options belong to whichever program is selected, so they are rebuilt
+   on every switch rather than baked once at startup. */
+function fillWeekDay() {
+  const p = activeProgram(), sw = $("selWeek"), sd = $("selDay");
+  sw.innerHTML = ""; sd.innerHTML = "";
+  const nWeeks = p.weeks || WAVE.length;
+  for (let i = 1; i <= nWeeks; i++) {
+    const o = document.createElement("option");
+    o.value = i;
+    if (p.loading === "rir") {
+      o.textContent = "Week " + i + " — RIR " + (p.rirByWeek ? p.rirByWeek[i] : "?");
+    } else {
+      const w = wave(i);
+      o.textContent = "Week " + i + (w.deload ? " — deload" : w.peak ? " — peak" : "");
+    }
+    sw.appendChild(o);
+  }
+  p.days.forEach(d => {
     const o = document.createElement("option");
     o.value = d.n; o.textContent = "D" + d.n + " — " + d.name;
     sd.appendChild(o);
   });
+  if (S.week > nWeeks) S.week = 1;
+  if (!p.days.some(d => d.n === S.day)) S.day = p.days[0].n;
   sw.value = S.week; sd.value = S.day;
-  sw.onchange = () => { S.week = +sw.value; openEx = null; save(); renderLift(); };
-  sd.onchange = () => { S.day = +sd.value; openEx = null; save(); renderLift(); };
 }
 
 $("btnAddEx").onclick = () => {
   const nm = prompt("Exercise name");
   if (!nm) return;
   const sc = prompt("Sets × reps, e.g. 3 x 10 (leave blank if none)") || "";
-  if (!S.customEx[S.day]) S.customEx[S.day] = [];
-  S.customEx[S.day].push({ k: "c" + Date.now(), slot: "+", nm: nm.trim(), scheme: sc.trim() || undefined });
+  const ck = S.programKey + ":" + S.day;
+  if (!S.customEx[ck]) S.customEx[ck] = [];
+  S.customEx[ck].push({ k: "c" + Date.now(), slot: "+", nm: nm.trim(), scheme: sc.trim() || undefined, block: "lift" });
   save(); renderLift(); toast("Added to " + dayDef(S.day).name);
 };
 
@@ -869,6 +1012,7 @@ $("btnSaveSession").onclick = () => {
   if (!entries.length) { toast("Nothing logged yet"); return; }
   S.sessions.push({
     id: "s" + Date.now(), date: new Date().toISOString(),
+    program: S.programKey, programName: activeProgram().name,
     week: S.week, day: S.day, dayName: dayDef(S.day).name,
     entries, notes: d.notes || ""
   });

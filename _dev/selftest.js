@@ -38,7 +38,114 @@
     return b.right <= window.innerWidth + 0.5 ? true : "badge right=" + b.right.toFixed(0);
   });
 
+  // ---- re-entry block (the default program from 2026-09-07) ----
+  function setProgram(k) {
+    const sp = document.getElementById("selProgram");
+    sp.value = k; sp.onchange();
+  }
+  t("re-entry is the program the app opens on", () =>
+    S.programKey === "reentry" ? true : S.programKey);
+  t("re-entry has 4 weeks and 3 days", () => {
+    const w = document.getElementById("selWeek").options.length;
+    const d = document.getElementById("selDay").options.length;
+    return (w === 4 && d === 3) ? true : "weeks=" + w + " days=" + d;
+  });
+  t("week 1 caps at RIR 4 and says so on screen", () => {
+    const info = document.getElementById("waveInfo").textContent;
+    return /STOP AT 4 REPS IN RESERVE/.test(info) ? true : info.slice(0, 80);
+  });
+  t("RIR cap tightens across the block: 4,3,3,2", () => {
+    const got = [1, 2, 3, 4].map(w => REENTRY.rirByWeek[w]).join(",");
+    return got === "4,3,3,2" ? true : got;
+  });
+  t("no percentage target is computed on an RIR program", () => {
+    const ex = REENTRY.days[0].ex.find(e => e.k === "r-boxsquat");
+    return targetFor(ex) === null ? true : JSON.stringify(targetFor(ex));
+  });
+  t("core work is listed BEFORE the lifts on every day", () => {
+    const bad = [];
+    REENTRY.days.forEach(d => {
+      let seenLift = false;
+      d.ex.forEach(e => {
+        if (e.block === "lift") seenLift = true;
+        else if (e.block === "core" && seenLift) bad.push(d.name + "/" + e.nm);
+      });
+    });
+    return bad.length ? bad.join(", ") : true;
+  });
+  t("every lift has a starting load or is explicitly bodyweight", () => {
+    const bad = [];
+    REENTRY.days.forEach(d => d.ex.forEach(e => {
+      if (e.block === "lift" && e.start === undefined && e.k !== "r-pullup") bad.push(e.nm);
+    }));
+    return bad.length ? bad.join(", ") : true;
+  });
+  t("every suggested load says where it came from", () => {
+    const bad = [];
+    REENTRY.days.forEach(d => d.ex.forEach(e => {
+      if (e.start !== undefined && !e.basis) bad.push(e.nm);
+    }));
+    return bad.length ? bad.join(", ") : true;
+  });
+  t("day B is the hamstring re-test and warns on screen", () => {
+    document.getElementById("selDay").value = "2";
+    document.getElementById("selDay").onchange();
+    const w = document.getElementById("dayWarn").textContent;
+    return (/Hamstring/.test(w) && /re-test/i.test(w)) ? true : w.slice(0, 80);
+  });
+  t("the RDL carries a stop-the-set instruction, not a nudge", () => {
+    const rdl = REENTRY.days[1].ex.find(e => e.k === "r-rdl");
+    return /STOP the set/.test(rdl.cue) && /Do not push through/.test(rdl.cue)
+      ? true : (rdl.cue || "").slice(0, 60);
+  });
+  t("hanging knee raises are kept off the hinge day", () => {
+    const onHinge = REENTRY.days[1].ex.some(e => /Hanging Knee/.test(e.nm));
+    const onMixed = REENTRY.days[2].ex.some(e => /Hanging Knee/.test(e.nm));
+    return (!onHinge && onMixed) ? true : "hinge=" + onHinge + " mixed=" + onMixed;
+  });
+  t("the mobility lead line renders above the lifts", () => {
+    const w = document.getElementById("dayWarn").textContent;
+    return /Before you lift/.test(w) ? true : "missing";
+  });
+  t("a saved re-entry session records which program it was", () => {
+    document.getElementById("selDay").value = "1";
+    document.getElementById("selDay").onchange();
+    const head = document.querySelector("#exList .ex .exhead");
+    head.onclick();
+    const ins = document.querySelectorAll("#exList .ex.open .setrow input");
+    ins[0].value = "8"; ins[0].oninput();
+    document.getElementById("btnSaveSession").onclick();
+    const last = S.sessions[S.sessions.length - 1];
+    return (last && last.program === "reentry") ? true : JSON.stringify(last && last.program);
+  });
+  t("switching to Nicks rebuilds 12 weeks and 4 days", () => {
+    setProgram("nicks");
+    const w = document.getElementById("selWeek").options.length;
+    const d = document.getElementById("selDay").options.length;
+    return (w === 12 && d === 4) ? true : "weeks=" + w + " days=" + d;
+  });
+  t("switching programs resets to week 1 rather than carrying week 6 across", () =>
+    S.week === 1 ? true : S.week);
+  t("switching back to re-entry restores 4 weeks", () => {
+    setProgram("reentry");
+    const w = document.getElementById("selWeek").options.length;
+    return w === 4 ? true : w;
+  });
+  t("a custom exercise added to one program does not leak into the other", () => {
+    S.customEx = {}; S.programKey = "reentry"; S.day = 1;
+    S.customEx["reentry:1"] = [{ k: "cx", nm: "Test Move", block: "lift" }];
+    const inReentry = exercisesFor(1).some(e => e.nm === "Test Move");
+    S.programKey = "nicks";
+    const inNicks = exercisesFor(1).some(e => e.nm === "Test Move");
+    S.programKey = "reentry"; S.customEx = {};
+    return (inReentry && !inNicks) ? true : "reentry=" + inReentry + " nicks=" + inNicks;
+  });
+
+  // ---- the original Nick's Program checks, which need Nick's selected ----
+  setProgram("nicks");
   // ---- program maths ----
+  document.getElementById("selWeek").value = "6"; document.getElementById("selWeek").onchange();
+  document.getElementById("selDay").value = "1";  document.getElementById("selDay").onchange();
   t("W6 heavy squat = 170 (80% of 215 -> nearest 5)", () => {
     const s = document.querySelector("#exList .ex .exhead .sub").textContent;
     return /80%/.test(s) && /170 lb/.test(s) ? true : s;
@@ -105,7 +212,8 @@
     ins[1].value = "175"; ins[1].oninput();
     ins[2].value = "3";   ins[2].oninput();
     document.getElementById("btnSaveSession").onclick();
-    return S.sessions.length === 1 && S.sessions[0].entries[0].sets[0].load === "175"
+    const last = S.sessions[S.sessions.length - 1];
+    return last && last.program === "nicks" && last.entries[0].sets[0].load === "175"
       ? true : "sessions=" + S.sessions.length;
   });
   t("Epley with RIR: 175x2 @3 RIR -> ~204", () => {
@@ -118,17 +226,17 @@
     return /175×2 @3/.test(txt) && /204/.test(txt) ? true : txt.slice(0, 120);
   });
   t("draft clears after saving and leaves no empty rows behind", () => {
-    const d = S.draft["6-1"];
+    const d = S.draft["nicks-6-1"];
     const keys = d ? Object.keys(d.ex) : [];
     if (keys.length) return "draft still holds " + keys.length + " exercises";
     const raw = localStorage.getItem("strength-tracker-v1") || "";
-    return /"6-1":\{"ex":\{\}/.test(raw) ? true : "empty rows persisted to storage";
+    return /"nicks-6-1":\{"ex":\{\}/.test(raw) ? true : "empty rows persisted to storage";
   });
 
   // ---- storage ----
   t("state persists to localStorage", () => {
     const raw = JSON.parse(localStorage.getItem("strength-tracker-v1"));
-    return raw && raw.sessions.length === 1 ? true : "not persisted";
+    return raw && raw.sessions.length >= 1 ? true : "not persisted";
   });
   t("survives a corrupt saved blob", () => {
     localStorage.setItem("strength-tracker-v1", "{not json");
