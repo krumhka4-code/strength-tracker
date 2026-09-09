@@ -303,6 +303,57 @@
     return bad.length ? bad.join(",") : true;
   });
 
+  // ---- copy for chat (the only path results have to Karl) ----
+  const SAMPLE = {
+    programName: "Re-entry Block", week: 1, day: 1, dayName: "A - Squat",
+    date: "2026-09-08T12:00:00.000Z",
+    entries: [
+      { nm: "Box Squat", sets: [{ reps: "5", load: "115", rir: "4" }, { reps: "5", load: "115", rir: "3" }] },
+      { nm: "Dead Bug",  sets: [{ reps: "8", load: "",    rir: ""  }] },
+      { nm: "Leg Press", sets: [{ reps: "",  load: "",    rir: ""  }] }
+    ],
+    notes: "hamstring quiet"
+  };
+  t("copy text names program, week, day and date", () => {
+    const first = sessionText(SAMPLE).split("\n")[0].replace(/\u00b7/g, "-");
+    return /Re-entry Block - W1 D1 \(A - Squat\) - 2026-09-08/.test(first) ? true : first;
+  });
+  t("a loaded set reads as load x reps @ RIR", () => {
+    const txt = sessionText(SAMPLE);
+    return /Box Squat: 115x5 @4, 115x5 @3/.test(txt) ? true : txt;
+  });
+  t("a bodyweight set keeps its reps and drops the phantom load", () => {
+    const txt = sessionText(SAMPLE);
+    return /Dead Bug: 8 reps/.test(txt) ? true : txt;
+  });
+  t("an exercise with nothing entered is left out", () => {
+    const txt = sessionText(SAMPLE);
+    return !/Leg Press/.test(txt) ? true : "Leg Press leaked in";
+  });
+  t("notes ride along", () => /Notes: hamstring quiet/.test(sessionText(SAMPLE)) ? true : "missing");
+  t("copy falls back to the last SAVED session when nothing is typed in", () => {
+    let captured = null;
+    const realCopy = copyText;
+    copyText = function (x) { captured = x; };
+    document.getElementById("btnCopySession").onclick();
+    copyText = realCopy;
+    return (captured && captured.length > 0) ? true : "nothing captured";
+  });
+  t("a typed draft beats the saved history", () => {
+    S.programKey = "reentry"; S.week = 1; S.day = 1;
+    fillWeekDay(); renderLift();
+    const head = document.querySelector("#exList .ex .exhead");
+    head.onclick();
+    const ins = document.querySelectorAll("#exList .ex.open .setrow input");
+    ins[0].value = "9"; ins[0].oninput();
+    ins[1].value = "123"; ins[1].oninput();
+    let captured = null;
+    const realCopy = copyText;
+    copyText = function (x) { captured = x; };
+    document.getElementById("btnCopySession").onclick();
+    copyText = realCopy;
+    return /123x9/.test(captured || "") ? true : (captured || "").slice(0, 120);
+  });
   function emit() {
     out.push("");
     out.push("RESULT " + pass + " passed, " + fail + " failed");

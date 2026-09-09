@@ -250,6 +250,8 @@ td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
       <textarea id="sessNotes" rows="2" placeholder="How it felt, anything that hurt, what you skipped"></textarea>
       <div style="height:.6rem"></div>
       <button class="btn" id="btnSaveSession">Save session</button>
+      <div style="height:.5rem"></div>
+      <button class="btn sec" id="btnCopySession">Copy this session for chat</button>
       <div class="tiny muted center" style="margin-top:.5rem" id="saveHint"></div>
     </div>
   </section>
@@ -384,7 +386,7 @@ td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
 
 <script>
 "use strict";
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 const STORE_KEY = "strength-tracker-v1";
 
 /* ============================================================
@@ -1001,6 +1003,81 @@ $("btnAddEx").onclick = () => {
 };
 
 $("sessNotes").oninput = (e) => { draft().notes = e.target.value; save(); };
+
+/* ============================================================
+   COPY FOR CHAT
+   The app makes no network calls and is not going to. Data lives on this device only,
+   so the way results reach Karl's chat is that he pastes them, which is what has
+   actually worked all along. This makes that one tap instead of retyping a session
+   from a phone screen.
+   ============================================================ */
+function sessionText(s) {
+  const out = [];
+  const when = (s.date || new Date().toISOString()).slice(0, 10);
+  out.push((s.programName || activeProgram().name) + " \u00b7 W" + s.week + " D" + s.day +
+           " (" + (s.dayName || dayDef(s.day).name) + ") \u00b7 " + when);
+  if (isRir() && rirCap() != null) out.push("Target: stop at RIR " + rirCap());
+  (s.entries || []).forEach(e => {
+    const sets = (e.sets || []).map(x => {
+      const load = (x.load !== "" && x.load != null) ? x.load : null;
+      const reps = (x.reps !== "" && x.reps != null) ? x.reps : null;
+      if (load === null && reps === null) return null;
+      let t = load !== null ? load + "x" + (reps !== null ? reps : "?") : reps + " reps";
+      if (x.rir !== "" && x.rir != null) t += " @" + x.rir;
+      return t;
+    }).filter(Boolean);
+    if (sets.length) out.push(e.nm + ": " + sets.join(", "));
+  });
+  if (s.notes) out.push("Notes: " + s.notes);
+  return out.join("\n");
+}
+
+/* The current unsaved draft, shaped like a saved session so one formatter serves both. */
+function draftAsSession() {
+  const d = draft(), entries = [];
+  exercisesFor(S.day).forEach(ex => {
+    const arr = (d.ex[ex.k] || []).filter(x => x.reps !== "" || x.load !== "");
+    if (arr.length) entries.push({ nm: ex.nm, sets: arr });
+  });
+  return { programName: activeProgram().name, week: S.week, day: S.day,
+           dayName: dayDef(S.day).name, date: new Date().toISOString(),
+           entries, notes: d.notes || "" };
+}
+
+function copyText(txt) {
+  // navigator.clipboard needs a secure context. The live site is https, but a phone
+  // opened from a file:// copy or an old webview is not, so keep the fallback.
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(
+      () => toast("Copied. Paste it into the chat."),
+      () => legacyCopy(txt)
+    );
+  } else { legacyCopy(txt); }
+}
+function legacyCopy(txt) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = txt;
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    toast(ok ? "Copied. Paste it into the chat." : "Could not copy \u2014 long-press to select instead");
+  } catch (e) { toast("Could not copy on this browser"); }
+}
+
+$("btnCopySession").onclick = () => {
+  const live = draftAsSession();
+  let src = live;
+  if (!live.entries.length) {
+    // nothing typed in right now, so fall back to the most recent SAVED session
+    const mine = S.sessions.filter(x => (x.program || "nicks") === S.programKey);
+    if (!mine.length) { toast("Nothing logged yet to copy"); return; }
+    src = mine[mine.length - 1];
+  }
+  copyText(sessionText(src));
+};
 
 $("btnSaveSession").onclick = () => {
   const d = draft();
